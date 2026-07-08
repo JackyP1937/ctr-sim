@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# VS Code
+.vscode/
+
+# ROS2
+build/
+install/
+log/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
