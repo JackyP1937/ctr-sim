@@ -4,6 +4,9 @@ __pycache__/
 .venv/
 venv/
 
+# Python packaging
+*.egg-info/
+
 # VS Code
 .vscode/
 
@@ -17,3 +20,7 @@ log/
 
 # Windows
 Thumbs.db
+
+# Virtual environment
+.venv/
+
