@@ -3,59 +3,17 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class Material:
-    """Mechanical properties of a material."""
+    """
+    Represents the physical material from which a tube is constructed.
+
+    A Material stores only intrinsic material properties that are independent
+    of any particular tube geometry.
+
+    Examples include Nitinol, stainless steel, and silica optical fiber.
+
+    This class does not store any geometric or robot-specific information.
+    """
 
     name: str
     youngs_modulus: float
     shear_modulus: float
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# """
-# material.py
-
-# Defines materials used in concentric tube robots
-# """
-
-# from dataclasses import dataclass
-
-# @dataclass(frozen=True)
-# class Material:
-#     """
-#     Physical material properties
-    
-#     Parameters
-#     ----------
-#     name: str
-#         human-readable material name
-
-#     youngs_modulus: float
-#         Young's modulus (Pa)
-
-#     shear_modulus: float
-#         Shear modulus (Pa)
-#     """
-
-#     name: str
-
-#     youngs_modulus: float
-
-#     shear_modulus: float
-
-#     def __str__(self) -> str:
-#         return (
-#             f"{self.name}\n"
-#             f" Young's Modulus : {self.youngs_modulus:.3e} Pa\n"
-#             f" Shear Modulus : {self.shear_modulus:.3e} Pa"
-#         )

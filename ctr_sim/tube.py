@@ -4,7 +4,20 @@ from math import pi
 
 @dataclass
 class Tube:
-    """Represents a single concentric tube"""
+    """
+    Represents a single concentric tube or solid cylindrical element.
+
+    A Tube stores the fixed geometric properties of a physical component,
+    including its dimensions, precurvature, and material.
+
+    Derived mechanical properties such as the area moment of inertia (I),
+    polar moment of inertia (J), bending stiffness (EI), and torsional
+    stiffness (GJ) are computed automatically from the stored geometry
+    and material properties.
+
+    This class represents the physical tube only. It does not store the
+    tube's current insertion or rotation within a robot.
+    """
 
     name: str
     
