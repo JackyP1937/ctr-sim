@@ -2,101 +2,66 @@
 
 ## Vision
 
-`ctr-sim` is a Python-based software library for modeling, simulating, and controlling concentric tube robots (CTRs).
+`ctr-sim` is a Python library for modeling, simulating, and controlling concentric tube robots (CTRs).
 
-The project is organized into independent layers so that the core robotics algorithms can be reused without ROS 2 or MuJoCo.
+The project is designed around a reusable mechanics solver that is independent of visualization, ROS 2, teleoperation, or any particular deployment strategy.
 
 ---
 
 # Design Philosophy
 
-The project follows five guiding principles.
-
 1. Keep the robot model independent of interfaces.
 2. Compute derived quantities instead of storing them.
 3. Use SI units everywhere.
 4. Build small, focused classes with one responsibility.
-5. Separate physics, simulation, and visualization.
+5. Separate data structures from algorithms.
+6. Mechanics are independent of actuation strategy.
 
 ---
 
-# Architecture
+# Software Architecture
 
-                  Xbox Controller
-                         │
-                         ▼
-                Windows Controller Bridge
-                         │
-                         ▼
-                     ROS2 Interface
-                         │
-                         ▼
-              CTR Core Python Library
-                         │
-          ┌──────────────┴──────────────┐
-          ▼                             ▼
-      MuJoCo                     Jupyter Notebook
-          │
-          ▼
-    Visualization
+                Xbox Controller
+                       │
+                       ▼
+                Windows Bridge
+                       │
+                       ▼
+                    ROS2 Node
+                       │
+                       ▼
+               CTR Core Library
+                       │
+      ┌────────────────┴────────────────┐
+      ▼                                 ▼
+ Mechanics Solver                Visualization
+      │                                 │
+      ▼                                 ▼
+ MuJoCo Simulation               Jupyter / Plots
 
 The CTR Core Library is the center of the project.
-Everything else depends on it.
 
 ---
 
 # Core Classes
 
 Material
-    Represents the physical material of a component.
+
+Represents the physical material of a structural element.
+
+Examples
+
+- Nitinol
+- Stainless Steel
+- Silica Optical Fiber
+
+---
 
 Tube
-    Represents one precurved concentric tube.
 
-ConcentricTubeRobot
-    Represents a collection of concentric tubes.
+Represents one physical concentric tube (or solid cylindrical element).
 
-Future classes may include
-
-    Kinematics
-    Mechanics
-    Trajectory
-    Controller
-    Simulator
-
----
-
-# Material
-
-Responsibilities
-
-- Store material properties
-- Provide mechanical constants
-
-Input Properties
-
-- name
-- Young's modulus (E)
-- Shear modulus (G)
-
-Future Properties
-
-- density
-- Poisson's ratio
-- color
-- thermal expansion coefficient
-
-Material knows nothing about robots.
-
----
-
-# Tube
-
-Responsibilities
-
-Represents one physical tube.
-
-Input Properties
+Stores
 
 - name
 - length
@@ -105,97 +70,209 @@ Input Properties
 - outer diameter
 - material
 
-Derived Properties
+Computes
 
-- area moment of inertia (I)
-- polar moment of inertia (J)
-- bending stiffness (EI)
-- torsional stiffness (GJ)
 - wall thickness
+- I
+- J
+- EI
+- GJ
 
-The user never enters derived quantities.
+Tube contains no configuration information.
 
 ---
 
-# ConcentricTubeRobot
+CTRState
 
-Responsibilities
+Represents the current robot configuration.
+
+Stores
+
+- β (tube insertions)
+- α (tube rotations)
+
+Configuration only.
+
+No geometry.
+
+---
+
+ConcentricTubeRobot
 
 Represents a complete robot.
 
 Stores
 
 - ordered list of tubes
+- current robot state
 
-Future responsibilities
+Robot validation includes
 
-- joint variables
-- tube rotations
-- tube translations
-- forward kinematics
-- robot state
-
-Robot knows nothing about ROS2 or MuJoCo.
+- tube nesting
+- tube length ordering
+- state dimensions
 
 ---
 
-# Units
+Backbone
 
-All quantities use SI units.
+Represents the solved backbone geometry.
 
-Length                 meters
+Stores
 
-Diameter               meters
-
-Curvature              1/m
-
-Young's modulus        Pa
-
-Shear modulus          Pa
-
-Moment of inertia      m⁴
-
-EI                     N·m²
-
-GJ                     N·m²
+- arc length
+- backbone position
+- backbone orientation
 
 ---
 
-# Software Layers
+Segment
 
-Layer 1
+Represents one contiguous backbone interval.
 
-CTR Core Library
-
-Contains only robotics mathematics.
-
-No ROS.
-No MuJoCo.
-
-Layer 2
-
-Simulation
-
-Uses the CTR library to update MuJoCo.
-
-Layer 3
-
-Interfaces
-
-ROS2
-
-Xbox controller
-
-Future GUI
+Within a segment the active tube set is constant.
 
 ---
 
-# Future Goals
+CTRSolution
 
-- Forward kinematics
-- Mechanics solver
-- MuJoCo simulation
-- Teleoperation
-- Inverse kinematics
-- Motion planning
-- Hardware interface
+Complete solution of the forward mechanics problem.
+
+Stores
+
+- Backbone
+- torsion θ(s)
+- tip position
+- tip orientation
+
+---
+
+# Tube Ordering
+
+The robot stores tubes from outermost to innermost.
+
+Index 0
+    Outermost tube
+
+Index N−1
+    Innermost tube
+
+Robot state ordering follows the same convention.
+
+---
+
+# Tube Insertion Convention
+
+Insertion βᵢ is defined as the distance from the robot base to the distal tip
+of tube i.
+
+βᵢ = 0
+
+    Tube tip is located at the robot base.
+
+βᵢ > 0
+
+    Tube tip has advanced beyond the robot base.
+
+Valid range
+
+0 ≤ βᵢ ≤ Lᵢ
+
+---
+
+# Geometry
+
+Each tube occupies the interval
+
+    [βᵢ − Lᵢ , βᵢ]
+
+The backbone is partitioned into contiguous segments.
+
+Each segment contains a constant set of active tubes.
+
+---
+
+# Kinematics
+
+The kinematics package contains geometric algorithms.
+
+Examples
+
+- rigid body transformations
+- backbone segmentation
+
+These algorithms do not solve mechanics.
+
+---
+
+# Mechanics
+
+The mechanics package implements the unloaded Cosserat rod formulation.
+
+Primary components
+
+- torsion BVP
+- curvature computation
+- backbone integration
+- forward solver
+
+The mechanics solver accepts
+
+- tube geometry
+- material properties
+- current robot state
+
+and computes
+
+- backbone shape
+- tube torsion
+- tip pose
+
+---
+
+# Solver Philosophy
+
+The mechanics solver computes the robot shape for a given robot
+configuration (α, β).
+
+The solver makes no assumptions about
+
+- follow-the-leader deployment
+- staged insertion
+- teleoperation
+- autonomous planning
+
+Actuation strategy is intentionally separated from mechanics.
+
+---
+
+# Project Roadmap
+
+## Phase 1
+- [x] Project setup
+- [x] Git repository
+- [x] ROS2 controller bridge
+- [x] Python package
+
+## Phase 2
+- [x] Material class
+- [x] Tube class
+- [x] CTRState
+- [x] ConcentricTubeRobot
+- [x] Backbone
+- [x] Segment
+- [x] CTRSolution
+
+## Phase 3
+- [ ] Torsion BVP
+- [ ] Backbone integration
+- [ ] Forward mechanics solver
+
+## Phase 4
+- [ ] MuJoCo visualization
+- [ ] ROS2 teleoperation
+
+## Phase 5
+- [ ] Inverse kinematics
+- [ ] Motion planning
+- [ ] Hardware interface

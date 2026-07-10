@@ -6,12 +6,13 @@ class CTRState:
     """
     Represents the current configuration of a concentric tube robot.
 
-    The robot state contains only the variables that change during operation.
+    The robot state consists of:
 
-    The insertion and rotation lists correspond directly to the ordering of
-    the tubes stored in the associated ConcentricTubeRobot object.
+    βᵢ : tube insertions
+    αᵢ : tube rotations
 
-    This class contains no geometric or material information.
+    The ordering of both lists corresponds directly to the ordering of the
+    tubes stored in the associated ConcentricTubeRobot object.
     """
 
     insertions: list[float]

@@ -47,7 +47,7 @@ class ConcentricTubeRobot:
 
             if self.tubes[i].length >= self.tubes[i + 1].length:
                 raise ValueError(
-                    "Tube lengths must increase from outer to inner."
+                    f"{self.tubes[i+1].name} must be longer than {self.tubes[i].name}."
                 )
 
         # Check tube diameters
