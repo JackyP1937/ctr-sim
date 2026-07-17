@@ -4,7 +4,7 @@ from ctr_sim import (
     CTRState,
     ConcentricTubeRobot,
 )
-from ctr_sim.kinematics.forward import occupied_intervals
+from ctr_sim.kinematics.intervals import occupied_intervals
 
 nitinol = Material(
     name="Nitinol",

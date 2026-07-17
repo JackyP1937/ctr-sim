@@ -270,11 +270,10 @@ def evaluate_torsion_solution(
     s: np.ndarray,
 ) -> np.ndarray:
     """
-    Evaluate the torsion solution at arbitrary arc-length locations.
+    Evaluate the continuous torsion solution at arbitrary arc-length locations.
     """
 
     y = bvp_solution.sol(s)
 
     return y[0::2, :]
 
-    

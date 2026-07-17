@@ -1,11 +1,15 @@
+import numpy as np
 from ctr_sim import (
     Material,
     Tube,
     CTRState,
     ConcentricTubeRobot,
 )
-from ctr_sim.kinematics.intervals import occupied_intervals
-from ctr_sim.kinematics.intervals import backbone_segments
+from ctr_sim.mechanics import solve_forward_kinematics
+
+# ----------------------------------------
+# Materials
+# ----------------------------------------
 
 nitinol = Material(
     name="Nitinol",
@@ -18,6 +22,11 @@ fiber = Material(
     youngs_modulus=15e9,
     shear_modulus=6.4e9,
 )
+
+
+# ----------------------------------------
+# Robot
+# ----------------------------------------
 
 outer = Tube(
     name="OuterTube",
@@ -47,8 +56,8 @@ inner = Tube(
 )
 
 state = CTRState(
-    insertions=[0.0, 0.0, 0.0],
-    rotations=[0.0, 0.0, 0.0],
+    insertions=[0.10, 0.12, 0.14],
+    rotations=[0.0, np.pi/6, 0.0],
 )
 
 robot = ConcentricTubeRobot(
@@ -56,17 +65,8 @@ robot = ConcentricTubeRobot(
     state=state,
 )
 
-segments = backbone_segments(robot)
 
-print()
+solution = solve_forward_kinematics(robot)
 
-for segment in segments:
-
-    names = [tube.name for tube in segment.tubes]
-
-    print(
-        f"[{segment.start:.3f}, {segment.end:.3f}] : {names}"
-    )
-
-
-
+print(solution.tip_position)
+print(solution.tip_rotation)
