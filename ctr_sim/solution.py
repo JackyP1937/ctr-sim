@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import numpy as np
 from ctr_sim.backbone import Backbone
+from ctr_sim.robot import ConcentricTubeRobot
 
 
 @dataclass
@@ -8,7 +9,10 @@ class CTRSolution:
     """
     Complete solution of the CTR forward mechanics problem.
     """
-
+    
+    # Robot
+    robot: ConcentricTubeRobot
+    
     # Backbone quantities (at all points along backbone)
     backbone: Backbone
 

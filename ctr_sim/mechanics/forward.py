@@ -37,6 +37,7 @@ def solve_forward_kinematics(
     )
 
     return CTRSolution(
+        robot=robot,
         backbone=backbone,
         torsion=theta,
         tip_position=backbone.position[-1],
