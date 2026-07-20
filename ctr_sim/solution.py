@@ -18,6 +18,12 @@ class CTRSolution:
 
     # Tube torsion angles θ(s)
     torsion: np.ndarray
+    
+    # Curvature (1/m)
+    curvature: np.ndarray
+    
+    # Points along the arc
+    s: np.ndarray
 
     # Tip quantities
     tip_position: np.ndarray

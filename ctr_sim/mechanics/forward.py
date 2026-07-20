@@ -1,3 +1,5 @@
+import numpy as np
+
 from .torsion import (
     evaluate_torsion_solution,
     solve_torsion_bvp
@@ -19,20 +21,28 @@ def solve_forward_kinematics(
 
     bvp_solution = solve_torsion_bvp(robot)
 
+    ds = 1e-3
+
+    s = np.arange(
+        0.0,
+        robot.state.insertions[-1] + ds,
+        ds,
+    )
+
     theta = evaluate_torsion_solution(
         bvp_solution,
-        bvp_solution.x,
+        s,
     )
 
     u = resultant_curvature(
         robot,
         theta,
-        bvp_solution.x,
+        s,
     )
 
     backbone = integrate_backbone(
         u,
-        bvp_solution.x,
+        s,
         robot,
     )
 
@@ -40,6 +50,8 @@ def solve_forward_kinematics(
         robot=robot,
         backbone=backbone,
         torsion=theta,
+        curvature=u,
+        s=s,
         tip_position=backbone.position[-1],
         tip_rotation=backbone.rotation[-1],
     )
