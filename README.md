@@ -151,6 +151,7 @@ tests/
 - Backbone reconstruction
 - 3D visualization
 - Automated testing
+- Validated unloaded forward kinematics against an independent MATLAB implementation
 
 ---
 

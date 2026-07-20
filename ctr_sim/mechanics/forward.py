@@ -14,14 +14,13 @@ from ctr_sim.solution import CTRSolution
 
 def solve_forward_kinematics(
     robot: ConcentricTubeRobot,
+    ds: float = 1e-3,
 ) -> CTRSolution:
     """
     Solve the unloaded forward kinematics of a concentric tube robot.
     """
 
     bvp_solution = solve_torsion_bvp(robot)
-
-    ds = 1e-3
 
     s = np.arange(
         0.0,
