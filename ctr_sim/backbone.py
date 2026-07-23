@@ -1,15 +1,14 @@
 from dataclasses import dataclass
-import numpy as np
+
+from ctr_sim.segment import Segment
 
 
 @dataclass
 class Backbone:
     """
-    Backbone geometry of the CTR.
+    Segment-wise representation of the robot backbone.
     """
 
-    s: np.ndarray
+    segments: list[Segment]
 
-    position: np.ndarray
-
-    rotation: np.ndarray
+    

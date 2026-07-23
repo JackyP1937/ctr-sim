@@ -6,11 +6,12 @@ from ctr_sim.tube import Tube
 @dataclass
 class Segment:
     """
-    Represents one contiguous backbone segment.
-
-    Every point within the segment contains the same set of tubes.
+    A contiguous interval of the backbone over which the set of active tubes
+    remains constant.
     """
 
     start: float
     end: float
-    tubes: list[Tube]
+    active_tubes: list[Tube]
+
+    
