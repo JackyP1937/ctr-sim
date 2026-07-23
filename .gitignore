@@ -22,6 +22,4 @@ log/
 # Windows
 Thumbs.db
 
-# Virtual environment
-.venv/
 

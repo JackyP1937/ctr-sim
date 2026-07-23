@@ -1,10 +1,10 @@
 # ctr-sim
 
-A Python library for modeling and simulating concentric tube robots (CTRs).
+A Python library for modeling, simulating, and controlling concentric tube robots (CTRs).
 
 ![CTR Backbone](docs/images/backbone.png)
 
-`ctr-sim` provides tools for robot modeling, forward mechanics, and visualization using a Cosserat rod formulation. The project is being developed as an open-source robotics library with an emphasis on clean software architecture, numerical methods, and extensibility.
+`ctr-sim` is an open-source robotics library for concentric tube robots built with an emphasis on clean software architecture, numerical methods, and extensibility. The project provides tools for robot modeling, mechanics, visualization, and the foundations of task-space control.
 
 > **Current status:** Active development (v0.1)
 
@@ -12,16 +12,34 @@ A Python library for modeling and simulating concentric tube robots (CTRs).
 
 ## Features
 
-- Concentric tube robot modeling
-- Tube material and geometric properties
-- Robot state representation (insertions and rotations)
+### Robot Modeling
+
+- Material definitions
+- Tube geometry and mechanical properties
+- Robot configuration and state representation
 - Tube interval and backbone segmentation utilities
-- Unloaded forward mechanics
-  - Tube torsion boundary value solver
-  - Resultant curvature computation
-  - Cosserat rod backbone integration
+
+### Mechanics
+
+- Unloaded forward kinematics
+- Tube torsion boundary value solver
+- Resultant backbone curvature computation
+- Cosserat rod backbone integration
+- Backbone reconstruction
+
+### Control
+
+- Numerical position Jacobian
+- Initial resolved-rate inverse kinematics framework
+
+### Visualization
+
 - 3D backbone visualization using Matplotlib
+
+### Software Quality
+
 - Automated unit and integration tests using `pytest`
+- Forward mechanics validated against an independent MATLAB implementation
 
 ---
 
@@ -30,7 +48,7 @@ A Python library for modeling and simulating concentric tube robots (CTRs).
 Clone the repository:
 
 ```bash
-git clone https://github.com/<your-username>/ctr-sim.git
+git clone https://github.com/<your-github-username>/ctr-sim.git
 cd ctr-sim
 ```
 
@@ -117,13 +135,17 @@ plot_backbone(solution)
 
 ## Project Structure
 
-```
+```text
 ctr_sim/
 │
 ├── mechanics/
 │   ├── forward.py
 │   ├── integration.py
 │   └── torsion.py
+│
+├── control/
+│   ├── jacobian.py
+│   └── resolved_rate.py
 │
 ├── kinematics/
 │   ├── intervals.py
@@ -134,11 +156,11 @@ ctr_sim/
 └── ...
 ```
 
-```
+```text
 examples/
 ```
 
-```
+```text
 tests/
 ```
 
@@ -147,23 +169,25 @@ tests/
 ## Current Capabilities
 
 - Robot modeling
-- Forward kinematics
+- Unloaded forward kinematics
 - Backbone reconstruction
 - 3D visualization
-- Automated testing
-- Validated unloaded forward kinematics against an independent MATLAB implementation
+- Numerical position Jacobian
+- Initial resolved-rate inverse kinematics
+- Automated unit and integration testing
+- MATLAB validation of unloaded forward mechanics
+
+---
+
+## Current Development
+
+The project is currently focused on refactoring the forward mechanics to use a segment-aware backbone representation. This will provide a more physically faithful treatment of changing tube boundaries and improve numerical Jacobians, inverse kinematics, and task-space teleoperation.
 
 ---
 
 ## Roadmap
 
-- MATLAB validation
-- Improved plotting utilities
-- Workspace analysis
-- Animation
-- MuJoCo visualization
-- Inverse kinematics
-- ROS integration
+See [ROADMAP.md](ROADMAP.md) for the current development roadmap.
 
 ---
 
