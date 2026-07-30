@@ -13,7 +13,7 @@ from ctr_sim.segment_solution import SegmentSolution
 
 
 
-def resultant_curvature_sampled(
+def resultant_curvature(
     robot: ConcentricTubeRobot,
     theta: np.ndarray,
     s: np.ndarray,
