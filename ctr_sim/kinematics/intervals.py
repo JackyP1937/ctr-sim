@@ -86,7 +86,7 @@ def backbone_segments(
             Segment(
                 start=start,
                 end=end,
-                tubes=active_tubes,
+                active_tubes=active_tubes,
             )
         )
 

@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_bvp
 from ctr_sim.robot import ConcentricTubeRobot
+from ctr_sim.segment import Segment
 
 
 def theta_index(i: int) -> int:
@@ -265,7 +266,7 @@ def solve_torsion_bvp(
     )
     return bvp_solution
 
-def evaluate_torsion_solution(
+def evaluate_torsion_solution_sampled(
     bvp_solution,
     s: np.ndarray,
 ) -> np.ndarray:
@@ -277,3 +278,21 @@ def evaluate_torsion_solution(
 
     return y[0::2, :]
 
+
+def evaluate_segment_torsion(
+    bvp_solution,
+    segment: Segment,
+) -> np.ndarray:
+    """
+    Evaluate the torsion solution over a single backbone segment.
+
+    For the initial implementation, the torsion is evaluated at the
+    segment midpoint and assumed constant over the segment.
+    """
+
+    s_mid = 0.5 * (segment.start + segment.end)
+
+    y = bvp_solution.sol(np.array([s_mid]))
+
+    # Return only the torsion angles θ_i
+    return y[0::2, 0]

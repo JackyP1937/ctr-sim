@@ -7,6 +7,8 @@ from ctr_sim.robot import ConcentricTubeRobot
 from ctr_sim.backbone import Backbone
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
+from ctr_sim.segment import Segment
+from ctr_sim.kinematics.intervals import backbone_segments
 
 
 def resultant_curvature(
@@ -99,7 +101,7 @@ def unpack_state(
 
 
 
-def integrate_backbone(
+def integrate_backbone_sampled(
     u: np.ndarray,
     s: np.ndarray,
     robot: ConcentricTubeRobot,
@@ -181,4 +183,85 @@ def backbone_ode(
     dpds = rotation[:, 2]
 
     return pack_state(dpds, dRds)
+    
 
+def integrate_segments(
+    u: np.ndarray,
+    s: np.ndarray,
+    robot: ConcentricTubeRobot,
+):
+    """
+    Temporary bridge implementation.
+
+    Uses the existing sampled curvature to drive the new
+    segment-by-segment integrator.
+    """
+
+    segments = backbone_segments(robot)
+
+    position = np.zeros(3)
+    rotation = np.eye(3)
+
+    for segment in segments:
+
+        midpoint = 0.5 * (
+            segment.start +
+            segment.end
+        )
+
+        idx = np.argmin(
+            np.abs(s - midpoint)
+        )
+
+        curvature = u[:, idx]
+
+        position, rotation = integrate_segment(
+            position,
+            rotation,
+            curvature,
+            segment,
+        )
+
+    raise NotImplementedError
+
+
+def integrate_segment(
+    position0: np.ndarray,
+    rotation0: np.ndarray,
+    curvature: np.ndarray,
+    segment: Segment,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Integrate a single backbone segment assuming constant curvature.
+    """
+
+    y0 = pack_state(
+        position0,
+        rotation0,
+    )
+
+    kx = curvature[0]
+    ky = curvature[1]
+
+    solution = solve_ivp(
+        fun=lambda s, y: backbone_ode(
+            s,
+            y,
+            lambda _: kx,
+            lambda _: ky,
+        ),
+        t_span=(
+            segment.start,
+            segment.end,
+        ),
+        y0=y0,
+        t_eval=[
+            segment.end,
+        ],
+    )
+
+    position1 = solution.y[:3, -1]
+
+    rotation1 = solution.y[3:, -1].reshape((3, 3))
+
+    return position1, rotation1

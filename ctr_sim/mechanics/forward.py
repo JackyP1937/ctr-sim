@@ -1,11 +1,11 @@
 import numpy as np
 
 from .torsion import (
-    evaluate_torsion_solution,
+    evaluate_torsion_solution_sampled,
     solve_torsion_bvp
 )
 from .integration import (
-    integrate_backbone,
+    integrate_segments,
     resultant_curvature
 )
 
@@ -28,7 +28,7 @@ def solve_forward_kinematics(
         ds,
     )
 
-    theta = evaluate_torsion_solution(
+    theta = evaluate_torsion_solution_sampled(
         bvp_solution,
         s,
     )
@@ -39,7 +39,7 @@ def solve_forward_kinematics(
         s,
     )
 
-    backbone = integrate_backbone(
+    backbone = integrate_segments(
         u,
         s,
         robot,
