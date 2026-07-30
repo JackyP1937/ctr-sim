@@ -6,9 +6,7 @@ from ctr_sim.segment_solution import SegmentSolution
 @dataclass
 class Backbone:
     """
-    Segment-wise representation of the robot backbone.
+    Segment-wise mechanics solution.
     """
 
     segments: list[SegmentSolution]
-
-    

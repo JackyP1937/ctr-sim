@@ -9,9 +9,11 @@ from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 from ctr_sim.segment import Segment
 from ctr_sim.kinematics.intervals import backbone_segments
+from ctr_sim.segment_solution import SegmentSolution
 
 
-def resultant_curvature(
+
+def resultant_curvature_sampled(
     robot: ConcentricTubeRobot,
     theta: np.ndarray,
     s: np.ndarray,
@@ -185,6 +187,8 @@ def backbone_ode(
     return pack_state(dpds, dRds)
     
 
+
+
 def integrate_segments(
     u: np.ndarray,
     s: np.ndarray,
@@ -193,11 +197,13 @@ def integrate_segments(
     """
     Temporary bridge implementation.
 
-    Uses the existing sampled curvature to drive the new
-    segment-by-segment integrator.
+    Uses the existing sampled curvature to construct a
+    segment-wise backbone solution.
     """
 
     segments = backbone_segments(robot)
+
+    segment_solutions = []
 
     position = np.zeros(3)
     rotation = np.eye(3)
@@ -215,14 +221,38 @@ def integrate_segments(
 
         curvature = u[:, idx]
 
-        position, rotation = integrate_segment(
+        # TODO:
+        # Replace midpoint approximation with segment-wise torsion evaluation.
+        theta = np.zeros(len(robot.tubes))
+
+        ivp_solution, position1, rotation1 = integrate_segment(
             position,
             rotation,
             curvature,
             segment,
         )
 
-    raise NotImplementedError
+        segment_solutions.append(
+            SegmentSolution(
+                segment=segment,
+                theta=theta,
+                curvature=curvature,
+                ivp_solution=ivp_solution,
+            )
+        )
+
+        position = position1
+        rotation = rotation1
+
+    backbone = Backbone(
+        segments=segment_solutions,
+    )
+
+    return (
+        backbone,
+        position,
+        rotation,
+    )
 
 
 def integrate_segment(
@@ -243,6 +273,7 @@ def integrate_segment(
     kx = curvature[0]
     ky = curvature[1]
 
+    
     solution = solve_ivp(
         fun=lambda s, y: backbone_ode(
             s,
@@ -255,13 +286,12 @@ def integrate_segment(
             segment.end,
         ),
         y0=y0,
-        t_eval=[
-            segment.end,
-        ],
+        dense_output=True,
     )
+
 
     position1 = solution.y[:3, -1]
 
     rotation1 = solution.y[3:, -1].reshape((3, 3))
 
-    return position1, rotation1
+    return solution, position1, rotation1
