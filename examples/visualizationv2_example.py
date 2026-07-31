@@ -92,8 +92,7 @@ samples = sample_backbone(
     ds=1e-3,
 )
 
-for segment in backbone.segments:
-    print(segment.segment.start, segment.segment.end)
+print(samples.position[-1])
 
 
 # ----------------------------------------
