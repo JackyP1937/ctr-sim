@@ -7,6 +7,9 @@ import numpy as np
 
 from ctr_sim.solution import CTRSolution
 
+from ctr_sim.backbone_samples import BackboneSamples
+from ctr_sim.robot import ConcentricTubeRobot
+
 
 def set_axes_equal(ax) -> None:
     """
@@ -193,6 +196,118 @@ def plot_backbone(
     ax.set_zlabel("Z (m)")
 
     ax.set_title("CTR Backbone")
+
+    ax.view_init(
+        elev=25,
+        azim=-60,
+    )
+
+    ax.grid(True)
+
+    set_axes_equal(ax)
+
+    ax.legend()
+
+    plt.tight_layout()
+
+    plt.show()
+
+
+def plot_backbone_samples(
+    samples: BackboneSamples,
+    robot: ConcentricTubeRobot,
+    show_frames: bool = True,
+) -> None:
+    """
+    Plot a sampled backbone representation.
+    """
+
+    position = samples.position
+    rotation = samples.rotation
+    s = samples.s
+
+    x = position[:, 0]
+    y = position[:, 1]
+    z = position[:, 2]
+
+    fig = plt.figure(figsize=(8, 8))
+    ax = fig.add_subplot(
+        111,
+        projection="3d",
+    )
+
+    # Backbone
+    ax.plot(
+        x,
+        y,
+        z,
+        linewidth=3,
+        color="tab:blue",
+    )
+
+    # Base
+    ax.scatter(
+        x[0],
+        y[0],
+        z[0],
+        s=60,
+        color="k",
+        label="Base",
+    )
+
+    # Tube tips
+    tube_colors = [
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+    ]
+
+    for i, beta in enumerate(robot.state.insertions[:-1]):
+
+        idx = np.argmin(np.abs(s - beta))
+
+        ax.scatter(
+            x[idx],
+            y[idx],
+            z[idx],
+            s=70,
+            marker="^",
+            color=tube_colors[i],
+            label=f"Tube {i + 1} Tip",
+        )
+
+    # Robot tip
+    ax.scatter(
+        x[-1],
+        y[-1],
+        z[-1],
+        s=70,
+        color="tab:red",
+        label="Tip",
+    )
+
+    # Coordinate frames
+    if show_frames:
+
+        plot_frame(
+            ax,
+            position[0],
+            rotation[0],
+            length=0.01,
+        )
+
+        plot_frame(
+            ax,
+            position[-1],
+            rotation[-1],
+            length=0.01,
+        )
+
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    ax.set_zlabel("Z (m)")
+
+    ax.set_title("CTR Backbone (V2)")
 
     ax.view_init(
         elev=25,

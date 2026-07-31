@@ -1,1 +1,4 @@
-from .plotting import plot_backbone
+from .plotting import (
+    plot_backbone,
+    plot_backbone_samples,
+)

@@ -14,11 +14,13 @@ def sample_backbone(
 
     s_start = backbone.segments[0].segment.start
     s_end = backbone.segments[-1].segment.end
+    
+    n = int(round((s_end - s_start) / ds))
 
-    s = np.arange(
+    s = np.linspace(
         s_start,
-        s_end + ds,
-        ds,
+        s_end,
+        n + 1,
     )
 
     position = np.zeros((len(s), 3))
