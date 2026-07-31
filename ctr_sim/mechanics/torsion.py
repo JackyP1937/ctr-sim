@@ -292,26 +292,13 @@ def evaluate_segment_torsion(
     """
 
     s_mid = 0.5 * (
-    segment.start +
-    segment.end
+        segment.start +
+        segment.end
     )
-    #
-    # The torsion BVP is only defined over the inserted
-    # portion of the robot (s >= 0).
-    #
-    # Tube sections behind the robot base are assumed to
-    # remain straight and untwisted, so their orientation
-    # is simply the commanded base rotation.
-    #
-    if s_mid < 0.0:
-        return np.asarray(
-            robot.state.rotations,
-            dtype=float,
-        )
 
     y = bvp_solution.sol(
         np.array([s_mid])
     )
 
-    # Return only the torsion angles θ_i
     return y[0::2, 0]
+

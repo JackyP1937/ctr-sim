@@ -95,6 +95,17 @@ for i, segment_solution in enumerate(backbone.segments):
         segment_solution.curvature,
     )
 
+print("\nActive tubes:\n")
+
+for i, segment_solution in enumerate(backbone.segments):
+
+    print(
+        i,
+        segment_solution.segment.start,
+        segment_solution.segment.end,
+        [tube.name for tube in segment_solution.segment.active_tubes],
+    )
+
 samples = sample_backbone(
     backbone,
     ds=1e-3,

@@ -62,6 +62,15 @@ def backbone_segments(
 
     boundaries = sorted(boundaries)
 
+    # The robot backbone begins at the robot base, s=0.
+    # Tube material behind the base remains inside a rigid guide and
+    # is not part of the free backbone.
+    boundaries = [
+        boundary
+        for boundary in boundaries
+        if boundary >= 0.0
+    ]
+
     segments = []
 
     # Build each backbone segment
