@@ -87,6 +87,14 @@ backbone = solve_forward_kinematics_v2(
     robot,
 )
 
+print("\nV2 segment curvatures:")
+
+for i, segment_solution in enumerate(backbone.segments):
+    print(
+        f"Segment {i}:",
+        segment_solution.curvature,
+    )
+
 samples = sample_backbone(
     backbone,
     ds=1e-3,
