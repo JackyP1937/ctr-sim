@@ -61,6 +61,7 @@ def solve_forward_kinematics_v2(
     for segment in segments:
 
         theta = evaluate_segment_torsion(
+            robot,
             bvp_solution,
             segment,
         )

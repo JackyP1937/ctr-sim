@@ -280,6 +280,7 @@ def evaluate_torsion_solution_sampled(
 
 
 def evaluate_segment_torsion(
+    robot: ConcentricTubeRobot,
     bvp_solution,
     segment: Segment,
 ) -> np.ndarray:
@@ -290,9 +291,27 @@ def evaluate_segment_torsion(
     segment midpoint and assumed constant over the segment.
     """
 
-    s_mid = 0.5 * (segment.start + segment.end)
+    s_mid = 0.5 * (
+    segment.start +
+    segment.end
+    )
+    #
+    # The torsion BVP is only defined over the inserted
+    # portion of the robot (s >= 0).
+    #
+    # Tube sections behind the robot base are assumed to
+    # remain straight and untwisted, so their orientation
+    # is simply the commanded base rotation.
+    #
+    if s_mid < 0.0:
+        return np.asarray(
+            robot.state.rotations,
+            dtype=float,
+        )
 
-    y = bvp_solution.sol(np.array([s_mid]))
+    y = bvp_solution.sol(
+        np.array([s_mid])
+    )
 
     # Return only the torsion angles θ_i
     return y[0::2, 0]
