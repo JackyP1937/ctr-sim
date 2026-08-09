@@ -191,11 +191,14 @@ def construct_initial_guess(
 
     n = len(robot.tubes)
 
+
+
+
     # The BVP is solved over the entire inserted robot length.
-    L_total = max(robot.state.insertions)
+    #L_total = max(robot.state.insertions)
 
     # Initial arc-length sampling.
-    s = np.linspace(0.0, L_total, 50)
+    #s = np.linspace(0.0, L_total, 50)
 
     # Initial guess for the state vector:
     #
@@ -208,7 +211,45 @@ def construct_initial_guess(
     #  θₙ
     #  θₙ']
     #
+    #initial_guess = np.zeros((2 * n, len(s)))
+
+    
+
+    # The BVP is solved over the entire inserted robot length.
+    L_total = max(robot.state.insertions)
+
+    #
+    # Construct the initial BVP mesh.
+    #
+    # The torsion equations change when a tube terminates, so include
+    # every tube-tip location explicitly in the mesh rather than relying
+    # on solve_bvp() to discover those transition points through adaptive
+    # mesh refinement.
+    #
+    base_mesh = np.linspace(
+        0.0,
+        L_total,
+        50,
+    )
+
+    tube_tips = np.asarray(
+        robot.state.insertions,
+        dtype=float,
+    )
+
+    s = np.unique(
+        np.concatenate(
+            (
+                base_mesh,
+                tube_tips,
+            )
+        )
+    )
+
+    # Initial guess for the state vector:
     initial_guess = np.zeros((2 * n, len(s)))
+
+
 
     for i in range(n):
 

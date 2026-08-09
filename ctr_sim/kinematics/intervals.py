@@ -71,6 +71,13 @@ def backbone_segments(
         if boundary >= 0.0
     ]
 
+    # The free robot backbone begins at the base frame.
+    boundaries.append(0.0)
+
+    boundaries = sorted(
+        set(boundaries)
+    )
+
     segments = []
 
     # Build each backbone segment

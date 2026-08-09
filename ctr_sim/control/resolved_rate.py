@@ -52,7 +52,7 @@ def resolved_rate_step_v2(
 
     J = numerical_position_jacobian_v2(robot)
 
-    gain = 0.1
+    gain = 0.5
 
     dq = gain * np.linalg.pinv(J) @ dx
 

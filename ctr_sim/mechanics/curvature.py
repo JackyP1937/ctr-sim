@@ -106,3 +106,61 @@ def segment_curvature(
         ky / sum_EI,
         0.0,
     ])
+
+
+def segment_curvature_v2(
+    theta: np.ndarray,
+    segment: Segment,
+) -> np.ndarray:
+    """
+    Compute the resultant curvature over a single backbone segment
+    using segment-local torsion angles.
+
+    The entries of theta correspond directly to the tubes in
+    segment.active_tubes.
+    """
+
+    if len(theta) != len(segment.active_tubes):
+        raise ValueError(
+            "theta must contain one torsion angle per active tube."
+        )
+
+    kx = 0.0
+    ky = 0.0
+    sum_EI = 0.0
+
+    for i, tube in enumerate(
+        segment.active_tubes
+    ):
+
+        kappa = tube.precurvature
+
+        theta_i = theta[i]
+
+        kx += (
+            tube.EI
+            * kappa
+            * np.cos(theta_i)
+        )
+
+        ky += (
+            tube.EI
+            * kappa
+            * np.sin(theta_i)
+        )
+
+        sum_EI += tube.EI
+
+    curvature = np.zeros(3)
+
+    if sum_EI > 0.0:
+
+        curvature[0] = (
+            kx / sum_EI
+        )
+
+        curvature[1] = (
+            ky / sum_EI
+        )
+
+    return curvature

@@ -11,13 +11,22 @@ from ctr_sim.robot import ConcentricTubeRobot
 from ctr_sim.backbone import Backbone
 from ctr_sim.segment_solution import SegmentSolution
 
-from .torsion import (
-    solve_torsion_bvp,
-    evaluate_segment_torsion,
+# from .torsion import (
+#     solve_torsion_bvp,
+#     evaluate_segment_torsion,
+# )
+
+from .torsion_v2 import (
+    solve_torsion_v2,
+    evaluate_segment_torsion_v2,
 )
 
+# from .curvature import (
+#     segment_curvature,
+# )
+
 from .curvature import (
-    segment_curvature,
+    segment_curvature_v2,
 )
 
 from .integration import (
@@ -47,7 +56,11 @@ def solve_forward_kinematics_v2(
     # Step 2
     # Solve torsion.
     #
-    bvp_solution = solve_torsion_bvp(robot)
+
+    # bvp_solution = solve_torsion_bvp(robot)
+    torsion_solution = solve_torsion_v2(
+        robot,
+    )
 
     #
     # Step 3
@@ -60,14 +73,24 @@ def solve_forward_kinematics_v2(
 
     for segment in segments:
 
-        theta = evaluate_segment_torsion(
-            robot,
-            bvp_solution,
+        # theta = evaluate_segment_torsion(
+        #     robot,
+        #     bvp_solution,
+        #     segment,
+        # )
+
+        theta = evaluate_segment_torsion_v2(
+            torsion_solution,
             segment,
         )
 
-        curvature = segment_curvature(
-            robot,
+        # curvature = segment_curvature(
+        #     robot,
+        #     theta,
+        #     segment,
+        # )
+
+        curvature = segment_curvature_v2(
             theta,
             segment,
         )

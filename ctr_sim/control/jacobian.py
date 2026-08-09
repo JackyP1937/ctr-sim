@@ -99,7 +99,11 @@ def numerical_position_jacobian_v2(
     delta_rotation: float = 1e-4,
 ) -> np.ndarray:
     """
-    Compute the numerical position Jacobian using forward finite differences.
+    Compute the numerical position Jacobian using finite differences.
+
+    Insertion derivatives use forward differences when possible and
+    backward differences at the maximum insertion limit.
+    Rotation derivatives use forward differences.
 
     Parameters
     ----------
@@ -142,22 +146,65 @@ def numerical_position_jacobian_v2(
     #
     for i in range(n):
 
-        robot_plus = deepcopy(robot)
+        beta_i = robot.state.insertions[i]
+        tube_length = robot.tubes[i].length
 
-        robot_plus.state.insertions[i] += delta_insertion
+        #
+        # Use a forward difference whenever the positive
+        # perturbation remains physically valid.
+        #
+        if beta_i + delta_insertion <= tube_length:
 
-        backbone = solve_forward_kinematics_v2(
-            robot_plus,
-        )
+            robot_plus = deepcopy(robot)
 
-        samples = sample_backbone(
-            backbone,
-            ds=1e-4,
-        )
+            robot_plus.state.insertions[i] += (
+                delta_insertion
+            )
 
-        x_plus = samples.position[-1]
+            backbone = solve_forward_kinematics_v2(
+                robot_plus,
+            )
 
-        J[:, i] = (x_plus - x0) / delta_insertion
+            samples = sample_backbone(
+                backbone,
+                ds=1e-4,
+            )
+
+            x_plus = samples.position[-1]
+
+            J[:, i] = (
+                x_plus - x0
+            ) / delta_insertion
+
+        else:
+
+            #
+            # The tube is at its maximum insertion.
+            #
+            # A positive perturbation would move the tube's
+            # proximal end beyond the robot base (s > 0),
+            # so use a backward difference instead.
+            #
+            robot_minus = deepcopy(robot)
+
+            robot_minus.state.insertions[i] -= (
+                delta_insertion
+            )
+
+            backbone = solve_forward_kinematics_v2(
+                robot_minus,
+            )
+
+            samples = sample_backbone(
+                backbone,
+                ds=1e-4,
+            )
+
+            x_minus = samples.position[-1]
+
+            J[:, i] = (
+                x0 - x_minus
+            ) / delta_insertion
 
     #
     # Rotation columns
