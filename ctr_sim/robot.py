@@ -49,6 +49,8 @@ class ConcentricTubeRobot:
                 raise ValueError(
                     f"{self.tubes[i+1].name} must be longer than {self.tubes[i].name}."
                 )
+        
+        self.validate_configuration()
 
         # Check tube diameters
         for i in range(len(self.tubes) - 1):
@@ -56,4 +58,35 @@ class ConcentricTubeRobot:
             if self.tubes[i].inner_diameter <= self.tubes[i + 1].outer_diameter:
                 raise ValueError(
                     "Each tube must fit inside the previous tube."
+                )
+
+    def validate_configuration(self) -> None:
+        """
+        Validate the current robot configuration.
+
+        Each tube insertion must satisfy
+
+            0 <= beta_i <= L_i
+
+        so that the tube tip does not retract behind the robot base
+        and the tube's proximal end does not extend beyond the base.
+        """
+
+        for tube, beta in zip(
+            self.tubes,
+            self.state.insertions,
+        ):
+
+            if beta < 0.0:
+                raise ValueError(
+                    f"Invalid insertion for {tube.name}: "
+                    f"beta = {beta} must be greater than "
+                    "or equal to 0."
+                )
+
+            if beta > tube.length:
+                raise ValueError(
+                    f"Invalid insertion for {tube.name}: "
+                    f"beta = {beta} exceeds tube length "
+                    f"L = {tube.length}."
                 )

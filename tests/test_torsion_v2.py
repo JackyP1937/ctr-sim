@@ -310,3 +310,23 @@ def test_torsion_shooting_continuation():
         0.0,
         atol=1e-6,
     )
+
+
+def test_solve_torsion_v2_with_initial_guess(
+    forward_robot,
+):
+
+    solution_1 = solve_torsion_v2(
+        forward_robot,
+    )
+
+    solution_2 = solve_torsion_v2(
+        forward_robot,
+        initial_guess=solution_1.base_theta_dot,
+    )
+
+    assert np.allclose(
+        solution_2.base_theta_dot,
+        solution_1.base_theta_dot,
+        atol=1e-6,
+    )

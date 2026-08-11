@@ -20,6 +20,10 @@ from ctr_sim.control.resolved_rate import (
     resolved_rate_step_v2,
 )
 
+from ctr_sim.control.constraints import (
+    constrain_joint_step,
+)
+
 
 # ----------------------------------------
 # Materials
@@ -92,10 +96,13 @@ sampling_ds = 1e-3
 # Mechanics helper
 # ----------------------------------------
 
-def solve_robot():
+def solve_robot(
+    torsion_initial_guess=None,
+):
 
     backbone = solve_forward_kinematics_v2(
         robot,
+        torsion_initial_guess=torsion_initial_guess,
     )
 
     samples = sample_backbone(
@@ -103,14 +110,14 @@ def solve_robot():
         ds=sampling_ds,
     )
 
-    return samples
+    return backbone, samples
 
 
 # ----------------------------------------
 # Initial solve
 # ----------------------------------------
 
-samples = solve_robot()
+backbone, samples = solve_robot()
 
 
 # ----------------------------------------
@@ -166,6 +173,8 @@ ax.grid(True)
 
 def on_key(event):
 
+    global backbone
+
     if event.key == "right":
         dx = np.array([
             cartesian_step,
@@ -218,13 +227,37 @@ def on_key(event):
     print()
     print("Requested Cartesian step:", dx)
 
+    torsion_initial_guess = (
+        backbone
+        .torsion_solution
+        .base_theta_dot
+    )
+
     #
     # Compute joint-space increment.
     #
     dq = resolved_rate_step_v2(
         robot,
         dx,
+        torsion_initial_guess=torsion_initial_guess,
     )
+
+    #
+    # Enforce insertion limits before applying
+    # the joint-space command.
+    #
+    dq = constrain_joint_step(
+        robot,
+        dq,
+    )
+    
+    # print(
+    #     "Applied joint step:",
+    #     np.round(
+    #         dq,
+    #         6,
+    #     ),
+    # )
 
     n = len(robot.tubes)
 
@@ -235,9 +268,17 @@ def on_key(event):
     robot.state.rotations += dq[n:]
 
     #
+    # Verify that the resulting robot configuration
+    # remains physically valid.
+    #
+    robot.validate_configuration()
+
+    #
     # Recompute robot shape.
     #
-    new_samples = solve_robot()
+    backbone, new_samples = solve_robot(
+        torsion_initial_guess=torsion_initial_guess,
+    )
 
     new_position = new_samples.position
 

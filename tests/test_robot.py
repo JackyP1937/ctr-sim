@@ -191,3 +191,116 @@ def test_requires_nested_tubes():
             tubes=[outer, middle, inner],
             state=state,
         )
+
+
+@pytest.mark.parametrize(
+    "tube_index",
+    [0, 1, 2],
+)
+def test_robot_allows_zero_insertion(
+    forward_robot,
+    tube_index,
+):
+
+    forward_robot.state.insertions[
+        tube_index
+    ] = 0.0
+
+    forward_robot.validate_configuration()
+
+
+@pytest.mark.parametrize(
+    "tube_index",
+    [0, 1, 2],
+)
+def test_robot_rejects_negative_insertion(
+    forward_robot,
+    tube_index,
+):
+
+    forward_robot.state.insertions[
+        tube_index
+    ] = -1e-3
+
+    with pytest.raises(
+        ValueError,
+        match="greater than or equal to 0",
+    ):
+        forward_robot.validate_configuration()
+
+
+@pytest.mark.parametrize(
+    "tube_index",
+    [0, 1, 2],
+)
+def test_robot_allows_maximum_insertion(
+    forward_robot,
+    tube_index,
+):
+
+    forward_robot.state.insertions[
+        tube_index
+    ] = (
+        forward_robot.tubes[
+            tube_index
+        ].length
+    )
+
+    forward_robot.validate_configuration()
+
+
+@pytest.mark.parametrize(
+    "tube_index",
+    [0, 1, 2],
+)
+def test_robot_rejects_insertion_beyond_tube_length(
+    forward_robot,
+    tube_index,
+):
+
+    forward_robot.state.insertions[
+        tube_index
+    ] = (
+        forward_robot.tubes[
+            tube_index
+        ].length
+        + 1e-3
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exceeds tube length",
+    ):
+        forward_robot.validate_configuration()
+
+
+def test_robot_rejects_invalid_insertion_on_creation():
+
+    outer, middle, inner = create_tubes()
+
+    state = CTRState(
+        insertions=[
+            0.0,
+            middle.length + 1e-3,
+            0.0,
+        ],
+        rotations=[
+            0.0,
+            0.0,
+            0.0,
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="exceeds tube length",
+    ):
+        ConcentricTubeRobot(
+            tubes=[
+                outer,
+                middle,
+                inner,
+            ],
+            state=state,
+        )
+

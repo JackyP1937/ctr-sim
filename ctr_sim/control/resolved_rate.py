@@ -44,13 +44,17 @@ def resolved_rate_step(
 def resolved_rate_step_v2(
     robot: ConcentricTubeRobot,
     dx: np.ndarray,
+    torsion_initial_guess: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Compute a joint-space increment that best achieves a desired
     Cartesian position increment using the Mechanics V2 pipeline.
     """
 
-    J = numerical_position_jacobian_v2(robot)
+    J = numerical_position_jacobian_v2(
+        robot,
+        torsion_initial_guess=torsion_initial_guess,
+    )
 
     gain = 0.5
 

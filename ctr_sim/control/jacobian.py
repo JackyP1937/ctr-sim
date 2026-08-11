@@ -97,7 +97,9 @@ def numerical_position_jacobian_v2(
     robot: ConcentricTubeRobot,
     delta_insertion: float = 1e-4,
     delta_rotation: float = 1e-4,
+    torsion_initial_guess: np.ndarray | None = None,
 ) -> np.ndarray:
+
     """
     Compute the numerical position Jacobian using finite differences.
 
@@ -113,6 +115,9 @@ def numerical_position_jacobian_v2(
         Perturbation applied to tube insertions (m).
     delta_rotation : float, optional
         Perturbation applied to tube rotations (rad).
+    torsion_initial_guess : np.ndarray, optional
+        Initial guess for the nominal configuration's base
+        torsional strains theta_dot_i(0).
 
     Returns
     -------
@@ -129,7 +134,18 @@ def numerical_position_jacobian_v2(
     J = np.zeros((3, 2 * n))
   
     backbone = solve_forward_kinematics_v2(
-    robot,
+        robot,
+        torsion_initial_guess=torsion_initial_guess,
+    )
+
+    #
+    # Reuse the nominal torsion solution as the
+    # initial guess for all Jacobian perturbations.
+    #
+    nominal_torsion_guess = (
+        backbone
+        .torsion_solution
+        .base_theta_dot
     )
 
     samples = sample_backbone(
@@ -163,6 +179,7 @@ def numerical_position_jacobian_v2(
 
             backbone = solve_forward_kinematics_v2(
                 robot_plus,
+                torsion_initial_guess=nominal_torsion_guess,
             )
 
             samples = sample_backbone(
@@ -193,6 +210,7 @@ def numerical_position_jacobian_v2(
 
             backbone = solve_forward_kinematics_v2(
                 robot_minus,
+                torsion_initial_guess=nominal_torsion_guess,
             )
 
             samples = sample_backbone(
@@ -217,6 +235,7 @@ def numerical_position_jacobian_v2(
 
         backbone = solve_forward_kinematics_v2(
             robot_plus,
+            torsion_initial_guess=nominal_torsion_guess,
         )
 
         samples = sample_backbone(

@@ -4,6 +4,11 @@ from ctr_sim.mechanics.forward_v2 import (
     solve_forward_kinematics_v2,
 )
 
+from ctr_sim.mechanics.torsion_v2 import (
+    solve_torsion_v2,
+)
+
+
 
 def test_forward_kinematics_v2(forward_robot):
 
@@ -49,3 +54,50 @@ def test_forward_kinematics_v2(forward_robot):
     #
     assert segment.ivp_solution.sol is not None
 
+
+def test_forward_kinematics_v2_with_torsion_initial_guess(
+    forward_robot,
+):
+
+    #
+    # First solve normally.
+    #
+    backbone_1 = solve_forward_kinematics_v2(
+        forward_robot,
+    )
+
+    assert backbone_1.torsion_solution is not None
+
+    #
+    # Solve forward mechanics again using the
+    # torsion solution as a warm start.
+    #
+    backbone_2 = solve_forward_kinematics_v2(
+        forward_robot,
+        torsion_initial_guess=(
+            backbone_1
+            .torsion_solution
+            .base_theta_dot
+        ),
+    )
+
+    #
+    # Both solves should produce the same segment
+    # curvatures.
+    #
+    assert len(
+        backbone_1.segments
+    ) == len(
+        backbone_2.segments
+    )
+
+    for segment_1, segment_2 in zip(
+        backbone_1.segments,
+        backbone_2.segments,
+    ):
+
+        assert np.allclose(
+            segment_1.curvature,
+            segment_2.curvature,
+            atol=1e-6,
+        )

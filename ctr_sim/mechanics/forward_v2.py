@@ -40,10 +40,20 @@ from ctr_sim.kinematics.intervals import (
 
 def solve_forward_kinematics_v2(
     robot: ConcentricTubeRobot,
+    torsion_initial_guess: np.ndarray | None = None,
 ) -> Backbone:
     """
     Solve the unloaded forward mechanics using the
     segment-aware mechanics pipeline.
+
+    Parameters
+    ----------
+    robot : ConcentricTubeRobot
+        Robot configuration.
+
+    torsion_initial_guess : np.ndarray, optional
+        Initial guess for the base torsional strains
+        theta_dot_i(0).
     """
 
     #
@@ -60,6 +70,7 @@ def solve_forward_kinematics_v2(
     # bvp_solution = solve_torsion_bvp(robot)
     torsion_solution = solve_torsion_v2(
         robot,
+        initial_guess=torsion_initial_guess,
     )
 
     #
@@ -116,4 +127,7 @@ def solve_forward_kinematics_v2(
 
     return Backbone(
         segments=segment_solutions,
+        torsion_solution=torsion_solution,
     )
+
+    

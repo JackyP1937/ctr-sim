@@ -609,20 +609,35 @@ def integrate_torsion_segments(
 
 def solve_torsion_v2(
     robot: ConcentricTubeRobot,
+    initial_guess: np.ndarray | None = None,
 ) -> TorsionSolution:
     """
     Solve the segment-aware torsion mechanics.
 
-    A direct shooting solve is attempted first. If the direct
-    solve fails to converge, rotation continuation is used to
-    reach the requested configuration.
+    A direct shooting solve is attempted first. If an initial
+    guess is supplied, it is used for the base torsional strains.
 
-    The solved base torsional strains are then used to construct
-    the complete piecewise torsion solution.
+    If the direct solve fails to converge, rotation continuation
+    is used to reach the requested configuration.
+
+    Parameters
+    ----------
+    robot : ConcentricTubeRobot
+        Robot configuration.
+
+    initial_guess : np.ndarray, optional
+        Initial guess for the base torsional strains
+        theta_dot_i(0).
+
+    Returns
+    -------
+    TorsionSolution
+        Complete piecewise torsion solution.
     """
 
     shooting_result = solve_torsion_shooting(
         robot,
+        initial_guess=initial_guess,
     )
 
     if not shooting_result.success:
