@@ -25,6 +25,10 @@ setup(
     entry_points={
         'console_scripts': [
             'joy_receiver = ctr_teleop.joy_receiver:main',
+            'cartesian_teleop = ctr_teleop.cartesian_teleop:main',
+            'ctr_simulator = ctr_teleop.ctr_simulator:main',
         ],
     },
 )
+
+
