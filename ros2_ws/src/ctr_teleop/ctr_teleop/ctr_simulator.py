@@ -5,7 +5,16 @@ import numpy as np
 import rclpy
 
 from rclpy.node import Node
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import (
+    Twist,
+    Point,
+    TransformStamped,
+)
+from visualization_msgs.msg import Marker
+
+from tf2_ros.static_transform_broadcaster import (
+    StaticTransformBroadcaster,
+)
 
 from ctr_sim import (
     Material,
@@ -38,6 +47,17 @@ class CTRSimulator(Node):
         super().__init__(
             "ctr_simulator"
         )
+
+        #
+        # Static TF broadcaser for the CTR base frame
+        #
+        self.static_tf_broadcaster = (
+            StaticTransformBroadcaster(
+                self
+            )
+        )
+
+        self.publish_base_transform()
 
         #
         # Control settings.
@@ -91,6 +111,30 @@ class CTRSimulator(Node):
         )
 
         #
+        # Publish the sampled CTR backbone for visualization.
+        #
+        self.backbone_publisher = (
+            self.create_publisher(
+                Marker,
+                "/ctr/backbone",
+                1,
+            )
+        )
+
+
+        #
+        # Sample and publish the initial backbone for the default robot configuration/pose
+        #
+        initial_samples = sample_backbone(
+            self.backbone,
+            ds=1e-3,
+        )
+
+        self.publish_backbone(
+            initial_samples
+        )
+
+        #
         # Run the control loop at a fixed rate.
         #
         self.timer = self.create_timer(
@@ -105,6 +149,37 @@ class CTRSimulator(Node):
         self.get_logger().info(
             f"Control rate: "
             f"{self.control_rate:.1f} Hz"
+        )
+
+    def publish_base_transform(self):
+
+        transform = TransformStamped()
+
+        transform.header.stamp = (
+            self.get_clock().now().to_msg()
+        )
+
+        transform.header.frame_id = "world"
+
+        transform.child_frame_id = "ctr_base"
+
+        #
+        # ctr_base is currently coincident with world.
+        #
+        transform.transform.translation.x = 0.0
+        transform.transform.translation.y = 0.0
+        transform.transform.translation.z = 0.0
+
+        #
+        # Identity rotation quaternion.
+        #
+        transform.transform.rotation.x = 0.0
+        transform.transform.rotation.y = 0.0
+        transform.transform.rotation.z = 0.0
+        transform.transform.rotation.w = 1.0
+
+        self.static_tf_broadcaster.sendTransform(
+            transform
         )
 
     def create_robot(self):
@@ -187,6 +262,80 @@ class CTRSimulator(Node):
         self.last_command_time = (
             self.get_clock().now()
         )
+
+
+    def publish_backbone(
+        self,
+        samples,
+    ):
+
+        marker = Marker()
+
+        #
+        # The backbone coordinates are expressed
+        # relative to the CTR base frame.
+        #
+        marker.header.frame_id = "ctr_base"
+
+        marker.header.stamp = (
+            self.get_clock().now().to_msg()
+        )
+
+        #
+        # Marker identity.
+        #
+        marker.ns = "ctr"
+
+        marker.id = 0
+
+        #
+        # Draw the backbone as a connected line.
+        #
+        marker.type = Marker.LINE_STRIP
+
+        marker.action = Marker.ADD
+
+        #
+        # LINE_STRIP uses scale.x as line width.
+        #
+        marker.scale.x = 0.003
+
+        #
+        # Marker color.
+        #
+        marker.color.r = 0.2
+        marker.color.g = 0.6
+        marker.color.b = 1.0
+        marker.color.a = 1.0
+
+        #
+        # Convert sampled NumPy positions into
+        # geometry_msgs/Point objects.
+        #
+        for position in samples.position:
+
+            point = Point()
+
+            point.x = float(
+                position[0]
+            )
+
+            point.y = float(
+                position[1]
+            )
+
+            point.z = float(
+                position[2]
+            )
+
+            marker.points.append(
+                point
+            )
+
+        self.backbone_publisher.publish(
+            marker
+        )
+
 
     def control_callback(self):
         
@@ -315,6 +464,10 @@ class CTRSimulator(Node):
         samples = sample_backbone(
             self.backbone,
             ds=1e-3,
+        )
+
+        self.publish_backbone(
+            samples
         )
 
         tip = samples.position[-1]
