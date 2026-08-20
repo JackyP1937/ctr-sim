@@ -61,3 +61,29 @@ def sample_backbone(
         position=position,
         rotation=rotation,
     )
+
+def tip_position(
+    backbone: Backbone,
+) -> np.ndarray:
+
+    """
+    Evalaute the backbone position directly at the tip
+    """
+
+    final_segment_solution = (
+        backbone.segments[-1]
+    )
+    
+    s_tip = (
+        final_segment_solution
+        .segment
+        .end
+    )
+
+    state = (
+        final_segment_solution
+        .ivp_solution
+        .sol(s_tip)
+    )
+    
+    return state[:3]

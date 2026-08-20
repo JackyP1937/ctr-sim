@@ -4,6 +4,11 @@ from ctr_sim.mechanics.forward_v2 import (
     solve_forward_kinematics_v2,
 )
 
+from ctr_sim.mechanics.sampling import (
+    sample_backbone,
+    tip_position,
+)
+
 from ctr_sim.mechanics.torsion_v2 import (
     solve_torsion_v2,
 )
@@ -31,12 +36,6 @@ def test_forward_kinematics_v2(forward_robot):
         len(forward_robot.tubes),
     )
 
-
-
-
-
-
-
     assert segment.curvature.shape == (3,)
 
     #
@@ -53,6 +52,34 @@ def test_forward_kinematics_v2(forward_robot):
     # Dense output should be available.
     #
     assert segment.ivp_solution.sol is not None
+
+
+def test_tip_position_matches_sampled_backbone(
+    forward_robot,
+):
+
+    backbone = solve_forward_kinematics_v2(
+        forward_robot,
+    )
+
+    samples = sample_backbone(
+        backbone,
+        ds=1e-3,
+    )
+
+    direct_tip = tip_position(
+        backbone
+    )
+
+    sampled_tip = (
+        samples.position[-1]
+    )
+
+    assert np.allclose(
+        direct_tip,
+        sampled_tip,
+        atol=1e-9,
+    )
 
 
 def test_forward_kinematics_v2_with_torsion_initial_guess(

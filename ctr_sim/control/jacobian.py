@@ -9,8 +9,10 @@ from ctr_sim.mechanics.forward_v2 import (
     solve_forward_kinematics_v2,
 )
 from ctr_sim.mechanics.sampling import (
-    sample_backbone,
+    tip_position,
 )
+
+
 
 
 def numerical_position_jacobian(
@@ -148,13 +150,21 @@ def numerical_position_jacobian_v2(
         .base_theta_dot
     )
 
-    samples = sample_backbone(
-        backbone,
-        ds=1e-4,
-    )
+    # samples = sample_backbone(
+    #     backbone,
+    #     ds=1e-4,
+    # )
 
-    # Nominal tip position
-    x0 = samples.position[-1]
+    # # Nominal tip position
+    # x0 = samples.position[-1]
+
+    #
+    # Evaluate the nominal tip position directly from
+    # the final segment's continuous IVP solution.
+    #
+    x0 = tip_position(
+        backbone
+    )
 
 
     #
@@ -182,12 +192,19 @@ def numerical_position_jacobian_v2(
                 torsion_initial_guess=nominal_torsion_guess,
             )
 
-            samples = sample_backbone(
-                backbone,
-                ds=1e-4,
+
+            # samples = sample_backbone(
+            #     backbone,
+            #     ds=1e-4,
+            # )
+
+            # x_plus = samples.position[-1]
+
+            x_plus = tip_position(
+                backbone
             )
 
-            x_plus = samples.position[-1]
+
 
             J[:, i] = (
                 x_plus - x0
@@ -213,12 +230,16 @@ def numerical_position_jacobian_v2(
                 torsion_initial_guess=nominal_torsion_guess,
             )
 
-            samples = sample_backbone(
-                backbone,
-                ds=1e-4,
-            )
+            # samples = sample_backbone(
+            #     backbone,
+            #     ds=1e-4,
+            # )
 
-            x_minus = samples.position[-1]
+            # x_minus = samples.position[-1]
+
+            x_minus = tip_position(
+                backbone
+            )
 
             J[:, i] = (
                 x0 - x_minus
@@ -238,12 +259,16 @@ def numerical_position_jacobian_v2(
             torsion_initial_guess=nominal_torsion_guess,
         )
 
-        samples = sample_backbone(
-            backbone,
-            ds=1e-4,
-        )
+        # samples = sample_backbone(
+        #     backbone,
+        #     ds=1e-4,
+        # )
 
-        x_plus = samples.position[-1]
+        # x_plus = samples.position[-1]
+
+        x_plus = tip_position(
+            backbone
+        )
 
         J[:, n + i] = (x_plus - x0) / delta_rotation
 
