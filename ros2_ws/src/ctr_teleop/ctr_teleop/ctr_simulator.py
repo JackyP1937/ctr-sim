@@ -178,26 +178,10 @@ class CTRSimulator(Node):
         )
 
 
-        #
-        # Sample and publish the initial backbone for the default robot configuration/pose
-        #
-        # initial_samples = sample_backbone(
-        #     self.backbone,
-        #     ds=1e-3,
-        # )
-
         self.latest_samples = sample_backbone(
             self.backbone,
             ds=1e-3,
         )
-
-        # self.publish_backbone(
-        #     initial_samples
-        # )
-
-        # self.publish_tip_state(
-        #     initial_samples
-        # )
 
         #
         # Run the control loop at a fixed rate.
@@ -337,78 +321,6 @@ class CTRSimulator(Node):
             self.get_clock().now()
         )
 
-
-    # def publish_backbone(
-    #     self,
-    #     samples,
-    # ):
-
-    #     marker = Marker()
-
-    #     #
-    #     # The backbone coordinates are expressed
-    #     # relative to the CTR base frame.
-    #     #
-    #     marker.header.frame_id = "ctr_base"
-
-    #     marker.header.stamp = (
-    #         self.get_clock().now().to_msg()
-    #     )
-
-    #     #
-    #     # Marker identity.
-    #     #
-    #     marker.ns = "ctr"
-
-    #     marker.id = 0
-
-    #     #
-    #     # Draw the backbone as a connected line.
-    #     #
-    #     marker.type = Marker.LINE_STRIP
-
-    #     marker.action = Marker.ADD
-
-    #     #
-    #     # LINE_STRIP uses scale.x as line width.
-    #     #
-    #     marker.scale.x = 0.003
-
-    #     #
-    #     # Marker color.
-    #     #
-    #     marker.color.r = 0.2
-    #     marker.color.g = 0.6
-    #     marker.color.b = 1.0
-    #     marker.color.a = 1.0
-
-    #     #
-    #     # Convert sampled NumPy positions into
-    #     # geometry_msgs/Point objects.
-    #     #
-    #     for position in samples.position:
-
-    #         point = Point()
-
-    #         point.x = float(
-    #             position[0]
-    #         )
-
-    #         point.y = float(
-    #             position[1]
-    #         )
-
-    #         point.z = float(
-    #             position[2]
-    #         )
-
-    #         marker.points.append(
-    #             point
-    #         )
-
-    #     self.backbone_publisher.publish(
-    #         marker
-    #     )
 
     def publish_backbone(
         self,
@@ -711,19 +623,6 @@ class CTRSimulator(Node):
             self.get_clock().now()
         )
 
-        # #
-        # # Compute the resolved-rate joint step.
-        # #
-        # dq = resolved_rate_step_v2(
-        #     self.robot,
-        #     dx,
-        #     torsion_initial_guess=(
-        #         torsion_initial_guess
-        #     ),
-        # )
-
-
-
         #
         # Refresh the numerical Jacobian when necessary.
         #
@@ -827,24 +726,6 @@ class CTRSimulator(Node):
             control_end - control_start
         ).nanoseconds * 1e-9
 
-        #
-        # Sample the backbone so we can inspect
-        # the resulting tip position.
-        #
-        # samples = sample_backbone(
-        #     self.backbone,
-        #     ds=1e-3,
-        # )
-
-        # self.publish_backbone(
-        #     samples
-        # )
-
-        # self.publish_tip_state(
-        #     samples
-        # )
-
-        # tip = samples.position[-1]
 
         self.latest_samples = sample_backbone(
             self.backbone,
@@ -863,6 +744,7 @@ class CTRSimulator(Node):
         #     f"{tip[2]:+.5f}], "
         #     f"control={control_compute_time:.3f}s"
         # )
+        
         self.get_logger().info(
             "Tip: "
             f"[{tip[0]:+.5f}, "
