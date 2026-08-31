@@ -3,8 +3,8 @@
 <package format="3">
   <name>ctr_teleop</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="jackyp@todo.todo">jackyp</maintainer>
+  <description>ROS 2 teleoperation, simulation, and RViz visualization for concentric tube robots.</description>
+  <maintainer email="jackpeters06798@gmail.com">jackyp</maintainer>
   <license>TODO: License declaration</license>
 
   <depend>rclpy</depend>

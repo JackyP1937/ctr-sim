@@ -40,8 +40,8 @@ setup(
     install_requires=['setuptools'],
     zip_safe=True,
     maintainer='jackyp',
-    maintainer_email='jackyp@todo.todo',
-    description='TODO: Package description',
+    maintainer_email='jackpeters06798@gmail.com',
+    description='ROS 2 teleoperation, simulation, and RViz visualization for concentric tube robots.',
     license='TODO: License declaration',
     extras_require={
         'test': [

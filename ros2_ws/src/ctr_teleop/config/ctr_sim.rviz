@@ -79,7 +79,7 @@ Visualization Manager:
       Value: true
     - Class: rviz_default_plugins/MarkerArray
       Enabled: true
-      Name: MarkerArray
+      Name: CTR Backbone
       Namespaces:
         ctr_segments: true
       Topic:
@@ -88,6 +88,19 @@ Visualization Manager:
         History Policy: Keep Last
         Reliability Policy: Reliable
         Value: /ctr/backbone
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Tip Trajectory
+      Namespaces:
+        ctr_tip_trajectory: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /ctr/tip_trajectory
       Value: true
   Enabled: true
   Global Options:

@@ -165,6 +165,14 @@ class CTRSimulator(Node):
             )
         )
 
+        self.trajectory_publisher = (
+            self.create_publisher(
+                Marker,
+                "/ctr/tip_trajectory",
+                1,
+            )
+        )
+
         #
         # Publish the CTR tip pose.
         #
@@ -182,6 +190,28 @@ class CTRSimulator(Node):
             self.backbone,
             ds=1e-3,
         )
+
+        #
+        # Tip trajectory history.
+        #
+        # Store the most recent tip positions for
+        # visualization in RViz.
+        #
+        self.max_trajectory_points = 500
+
+        self.tip_trajectory = []
+
+
+        initial_tip = (
+            self.latest_samples
+            .position[-1]
+            .copy()
+        )
+
+        self.tip_trajectory.append(
+            initial_tip
+        )
+
 
         #
         # Run the control loop at a fixed rate.
@@ -256,8 +286,8 @@ class CTRSimulator(Node):
 
         outer = Tube(
             name="OuterTube",
-            length=0.16,
-            precurvature=15.0,
+            length=0.16, 
+            precurvature=15.0, 
             outer_diameter=3.0e-3,
             inner_diameter=2.8e-3,
             material=nitinol,
@@ -265,7 +295,7 @@ class CTRSimulator(Node):
 
         middle = Tube(
             name="MiddleTube",
-            length=0.18,
+            length=0.18, 
             precurvature=10.0,
             outer_diameter=2.0e-3,
             inner_diameter=1.8e-3,
@@ -274,7 +304,7 @@ class CTRSimulator(Node):
 
         inner = Tube(
             name="InnerTube",
-            length=0.20,
+            length=0.20, 
             precurvature=0.0,
             outer_diameter=1.6e-3,
             inner_diameter=0.0,
@@ -283,12 +313,12 @@ class CTRSimulator(Node):
 
         state = CTRState(
             insertions=[
-                0.10,
-                0.145,
-                0.19,
+                0.10, 
+                0.145, 
+                0.19, 
             ],
             rotations=[
-                np.pi / 2,
+                np.pi / 2, 
                 0.0,
                 0.0,
             ],
@@ -563,6 +593,61 @@ class CTRSimulator(Node):
         )
 
 
+    def publish_tip_trajectory(self):
+
+        marker = Marker()
+
+        marker.header.frame_id = "ctr_base"
+
+        marker.header.stamp = (
+            self.get_clock()
+            .now()
+            .to_msg()
+        )
+
+        marker.ns = "ctr_tip_trajectory"
+        marker.id = 0
+
+        marker.type = Marker.LINE_STRIP
+        marker.action = Marker.ADD
+
+        #
+        # Trajectory line width: 1.5 mm.
+        #
+        marker.scale.x = 0.0015
+
+        #
+        # White trajectory line.
+        #
+        marker.color.r = 1.0
+        marker.color.g = 1.0
+        marker.color.b = 1.0
+        marker.color.a = 1.0
+
+        for position in self.tip_trajectory:
+
+            point = Point()
+
+            point.x = float(
+                position[0]
+            )
+
+            point.y = float(
+                position[1]
+            )
+
+            point.z = float(
+                position[2]
+            )
+
+            marker.points.append(
+                point
+            )
+
+        self.trajectory_publisher.publish(
+            marker
+        )
+
 
     def control_callback(self):
         
@@ -737,13 +822,24 @@ class CTRSimulator(Node):
             .position[-1]
         )
 
-        # self.get_logger().info(
-        #     "Tip: "
-        #     f"[{tip[0]:+.5f}, "
-        #     f"{tip[1]:+.5f}, "
-        #     f"{tip[2]:+.5f}], "
-        #     f"control={control_compute_time:.3f}s"
-        # )
+        #
+        # Add the newest tip position to the
+        # trajectory history.
+        #
+        self.tip_trajectory.append(
+            tip.copy()
+        )
+
+        #
+        # Limit trajectory history length.
+        #
+        if (
+            len(self.tip_trajectory)
+            > self.max_trajectory_points
+        ):
+
+            self.tip_trajectory.pop(0)
+
         
         self.get_logger().info(
             "Tip: "
@@ -765,6 +861,8 @@ class CTRSimulator(Node):
         self.publish_tip_state(
             self.latest_samples
         )
+
+        self.publish_tip_trajectory()
 
 
 def main(args=None):
@@ -788,7 +886,9 @@ def main(args=None):
 
         node.destroy_node()
 
-        rclpy.shutdown()
+        if rclpy.ok():
+            
+            rclpy.shutdown()
 
 
 if __name__ == "__main__":
