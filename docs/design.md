@@ -2,277 +2,461 @@
 
 ## Vision
 
-`ctr-sim` is a Python library for modeling, simulating, and controlling concentric tube robots (CTRs).
+`ctr-sim` is a Python library and ROS 2 simulation framework for modeling, simulating, controlling, and teleoperating concentric tube robots (CTRs).
 
-The project is designed around a reusable mechanics solver that is independent of visualization, ROS 2, teleoperation, or any particular deployment strategy.
+The project is designed around a reusable mechanics library that remains independent of visualization, ROS 2, teleoperation, and any particular deployment strategy. ROS 2 provides an interface around the core mechanics and control algorithms rather than being embedded within them.
 
----
+## Design Philosophy
 
-# Design Philosophy
-
-1. Keep the robot model independent of interfaces.
-2. Compute derived quantities instead of storing them.
-3. Use SI units everywhere.
-4. Build small, focused classes with one responsibility.
+1. Keep the robot model independent of external interfaces.
+2. Compute derived quantities instead of storing redundant state.
+3. Use SI units throughout the mechanics and control code.
+4. Build small, focused classes with clear responsibilities.
 5. Separate data structures from algorithms.
-6. Mechanics are independent of actuation strategy.
+6. Keep mechanics independent of actuation strategy.
+7. Keep visualization and ROS 2 communication outside the core mechanics solver.
+8. Preserve continuous mechanics solutions and sample them only when needed.
 
----
+## Software Architecture
 
-# Software Architecture
+```text
+Xbox Controller
+      |
+      | XInput
+      v
+Windows joy_sender.py
+      |
+      | UDP
+      v
+ROS 2 joy_receiver
+      |
+      | /joy
+      v
+cartesian_teleop
+      |
+      | /ctr/cartesian_velocity
+      v
+ctr_simulator
+      |
+      +-----------------------------+
+      |                             |
+      v                             v
+CTR Core Library              ROS 2 State Output
+      |                             |
+      +-- robot model               +-- /ctr/backbone
+      +-- mechanics                 +-- /ctr/tip_pose
+      +-- Jacobian                  +-- /ctr/tip_trajectory
+      +-- resolved-rate control     +-- /tf
+      +-- constraints               +-- /tf_static
+      |                             |
+      +-------------+---------------+
+                    |
+                    v
+                   RViz
+```
 
-                Xbox Controller
-                       │
-                       ▼
-                Windows Bridge
-                       │
-                       ▼
-                    ROS2 Node
-                       │
-                       ▼
-               CTR Core Library
-                       │
-      ┌────────────────┴────────────────┐
-      ▼                                 ▼
- Mechanics Solver                Visualization
-      │                                 │
-      ▼                                 ▼
- MuJoCo Simulation               Jupyter / Plots
+The CTR core library is the center of the project. It can be used independently of ROS 2.
 
-The CTR Core Library is the center of the project.
+The ROS 2 layer handles controller input, control-loop scheduling, state publication, TF broadcasting, and RViz visualization.
 
----
+## Core Data Structures
 
-# Core Classes
-
-Material
+### Material
 
 Represents the physical material of a structural element.
 
-Examples
+Stores properties including:
 
-- Nitinol
-- Stainless Steel
-- Silica Optical Fiber
+- name;
+- Young's modulus;
+- shear modulus.
 
----
+Example materials include Nitinol and silica optical fiber.
 
-Tube
+### Tube
 
-Represents one physical concentric tube (or solid cylindrical element).
+Represents one physical concentric tube or solid cylindrical element.
 
-Stores
+Stores:
 
-- name
-- length
-- precurvature
-- inner diameter
-- outer diameter
-- material
+- name;
+- length;
+- precurvature;
+- inner diameter;
+- outer diameter;
+- material.
 
-Computes
+Derived mechanical quantities are computed from the tube geometry and material properties.
 
-- wall thickness
-- I
-- J
-- EI
-- GJ
+A `Tube` contains physical properties but no current configuration state.
 
-Tube contains no configuration information.
-
----
-
-CTRState
+### CTRState
 
 Represents the current robot configuration.
 
-Stores
+Stores:
 
-- β (tube insertions)
-- α (tube rotations)
+- tube insertions `beta`;
+- tube rotations `alpha`.
 
-Configuration only.
+For an `n`-tube robot, the controller uses the joint ordering
 
-No geometry.
+```text
+q = [beta_1 ... beta_n alpha_1 ... alpha_n]
+```
 
----
+Geometry and material properties remain in the corresponding `Tube` objects.
 
-ConcentricTubeRobot
+### ConcentricTubeRobot
 
-Represents a complete robot.
+Represents a complete CTR.
 
-Stores
+Stores:
 
-- ordered list of tubes
-- current robot state
+- an ordered list of tubes;
+- the current `CTRState`.
 
-Robot validation includes
+The robot is responsible for configuration and geometry validation.
 
-- tube nesting
-- tube length ordering
-- state dimensions
+### Segment
 
----
+Represents one contiguous backbone interval over which the active tube set is constant.
 
+Tube proximal and distal boundaries partition the robot into these segments.
+
+### SegmentSolution
+
+Represents the solved mechanics state for one backbone segment.
+
+Stores:
+
+- the corresponding `Segment`;
+- tube angular state;
+- resultant curvature;
+- the dense numerical IVP solution for backbone position and orientation.
+
+The dense IVP solution allows the backbone state to be evaluated continuously within the segment without fixing the mechanics solution to a particular visualization sampling resolution.
+
+### Backbone
+
+Represents the complete segment-aware forward-mechanics solution.
+
+The backbone contains the ordered `SegmentSolution` objects describing the robot from base to tip together with the solved torsional state used by the mechanics pipeline.
+
+The backbone can subsequently be sampled at any desired spatial resolution for visualization or analysis.
+
+## Tube Ordering
+
+Tubes are stored from outermost to innermost.
+
+```text
+Index 0       outermost tube
+...
+Index N - 1   innermost tube
+```
+
+Robot-state ordering follows the same convention.
+
+## Tube Insertion Convention
+
+For tube `i`, insertion `beta_i` defines the distal tube-tip location relative to the robot base.
+
+```text
+beta_i = 0
+    tube tip is located at the robot base
+
+beta_i > 0
+    tube tip extends beyond the robot base
+```
+
+The valid range is
+
+```text
+0 <= beta_i <= L_i
+```
+
+where `L_i` is the tube length.
+
+A tube therefore occupies the arc-length interval
+
+```text
+[beta_i - L_i, beta_i]
+```
+
+relative to the robot base.
+
+## Backbone Segmentation
+
+Tube boundaries determine where the set of active tubes changes.
+
+The mechanics pipeline constructs contiguous backbone segments such that the active tube set remains constant within each segment.
+
+Conceptually:
+
+```text
+tube boundaries
+      |
+      v
+sorted geometric intervals
+      |
+      v
+Segment 0
+Segment 1
+Segment 2
+...
+      |
+      v
+segment-aware mechanics
+```
+
+This representation avoids treating changing tube geometry as if it were uniform along the entire backbone.
+
+## Kinematics
+
+The `kinematics` package contains geometric utilities that do not solve the CTR mechanics problem.
+
+Examples include:
+
+- rigid-body transformations;
+- interval operations;
+- backbone segmentation utilities.
+
+Mechanics and control algorithms build on these geometric operations.
+
+## Mechanics
+
+The `mechanics` package implements the unloaded CTR mechanics pipeline.
+
+The segment-aware V2 forward solver performs approximately:
+
+```text
+Robot geometry + configuration
+            |
+            v
+Backbone segmentation
+            |
+            v
+Segment-aware torsion solution
+            |
+            v
+Segment torsion evaluation
+            |
+            v
+Resultant segment curvature
+            |
+            v
+Spatial backbone integration
+            |
+            v
+SegmentSolution objects
+            |
+            v
 Backbone
+```
 
-Represents the solved backbone geometry.
+### Torsion
 
-Stores
+Tube torsion is solved as a boundary-value problem using a shooting formulation.
 
-- arc length
-- backbone position
-- backbone orientation
+Continuation is used when necessary to improve convergence from difficult initial guesses.
 
----
+During interactive operation, the previous successful torsion solution is reused as an initial guess for nearby configurations. This warm start substantially reduces the cost of repeated forward-mechanics solves.
 
-Segment
+### Curvature
 
-Represents one contiguous backbone interval.
+Within each mechanics segment, the active tube set and solved tube angular state determine the resultant backbone curvature.
 
-Within a segment the active tube set is constant.
+Because the active tube set is constant within a segment, curvature is evaluated consistently with the local robot geometry.
 
----
+### Backbone Integration
 
-CTRSolution
+The spatial backbone state consists of position and orientation.
 
-Complete solution of the forward mechanics problem.
+Each segment is integrated as an initial-value problem, producing a dense continuous solution. The terminal state of one segment initializes the next segment so that the complete backbone remains continuous.
 
-Stores
+### Sampling
 
-- Backbone
-- torsion θ(s)
-- tip position
-- tip orientation
+The mechanics solution is independent of visualization resolution.
 
----
+`sample_backbone()` evaluates the continuous segment solutions at a requested spatial spacing and returns sampled position and orientation arrays.
 
-# Tube Ordering
+When only the tip position is needed, the final segment's dense IVP solution is evaluated directly at its endpoint rather than sampling the complete backbone.
 
-The robot stores tubes from outermost to innermost.
+## Solver Philosophy
 
-Index 0
-    Outermost tube
+The mechanics solver computes the robot equilibrium shape for a specified configuration `(alpha, beta)`.
 
-Index N−1
-    Innermost tube
+It does not assume a particular actuation strategy such as:
 
-Robot state ordering follows the same convention.
+- follow-the-leader deployment;
+- staged insertion;
+- joystick teleoperation;
+- autonomous planning.
 
----
+Actuation and control are intentionally separated from mechanics.
 
-# Tube Insertion Convention
+This allows the same forward solver to support interactive control, numerical Jacobians, validation examples, and future planning algorithms.
 
-Insertion βᵢ is defined as the distance from the robot base to the distal tip
-of tube i.
+## Cartesian Control
 
-βᵢ = 0
+The control layer implements numerical task-space control on top of the mechanics solver.
 
-    Tube tip is located at the robot base.
+### Numerical Position Jacobian
 
-βᵢ > 0
+The Cartesian position Jacobian is approximated with finite differences:
 
-    Tube tip has advanced beyond the robot base.
+```text
+J(q) = d p_tip / d q
+```
 
-Valid range
+with columns ordered as
 
-0 ≤ βᵢ ≤ Lᵢ
+```text
+[beta_1 ... beta_n alpha_1 ... alpha_n]
+```
 
----
+Insertion perturbations use forward differences when possible and backward differences near the maximum insertion limit. Rotation derivatives use forward differences.
 
-# Geometry
+Each perturbation requires another nonlinear forward-mechanics solve, making Jacobian computation the primary computational bottleneck.
 
-Each tube occupies the interval
+### Resolved-Rate Control
 
-    [βᵢ − Lᵢ , βᵢ]
+For a desired Cartesian displacement `dx`, the controller computes
 
-The backbone is partitioned into contiguous segments.
+```text
+dq = J(q)^+ dx
+```
 
-Each segment contains a constant set of active tubes.
+using the numerical pseudoinverse.
 
----
+The resulting joint increment is then passed through insertion constraints before the robot state is updated.
 
-# Kinematics
+### Jacobian Caching
 
-The kinematics package contains geometric algorithms.
+The ROS simulator caches the numerical Jacobian and reuses it for several nearby active control steps.
 
-Examples
+This reduces the number of nonlinear mechanics solves required during teleoperation.
 
-- rigid body transformations
-- backbone segmentation
+The scheduling policy belongs to the ROS simulator rather than the core Jacobian routine: the core control code can either compute a new Jacobian or accept a previously computed one.
 
-These algorithms do not solve mechanics.
+## ROS 2 Layer
 
----
+The ROS 2 package is located under:
 
-# Mechanics
+```text
+ros2_ws/src/ctr_teleop/
+```
 
-The mechanics package implements the unloaded Cosserat rod formulation.
+Its major nodes are:
 
-Primary components
+### `joy_receiver`
 
-- torsion BVP
-- curvature computation
-- backbone integration
-- forward solver
+Receives Xbox controller state over UDP from the Windows-side sender and publishes ROS 2 `Joy` messages.
 
-The mechanics solver accepts
+### `cartesian_teleop`
 
-- tube geometry
-- material properties
-- current robot state
+Converts joystick input into Cartesian tip-velocity commands.
 
-and computes
+The right trigger acts as a deadman control.
 
-- backbone shape
-- tube torsion
-- tip pose
+Cartesian commands are expressed in the `ctr_base` frame.
 
----
+### `ctr_simulator`
 
-# Solver Philosophy
+Owns the simulated robot state and:
 
-The mechanics solver computes the robot shape for a given robot
-configuration (α, β).
+- executes the resolved-rate controller;
+- calls the core CTR mechanics library;
+- manages Jacobian caching;
+- enforces the command watchdog;
+- publishes backbone visualization;
+- publishes the tip pose;
+- publishes the tip trajectory;
+- broadcasts static and dynamic TF transforms.
 
-The solver makes no assumptions about
+Control/mechanics computation and ROS state publication use separate timers so the latest available state can continue to be published independently of the nonlinear mechanics computation rate.
 
-- follow-the-leader deployment
-- staged insertion
-- teleoperation
-- autonomous planning
+## Coordinate Frames
 
-Actuation strategy is intentionally separated from mechanics.
+The current TF hierarchy is:
 
----
+```text
+world
+  |
+  v
+ctr_base
+  |
+  v
+ctr_tip
+```
 
-# Project Roadmap
+`world -> ctr_base` is currently a static identity transform.
 
-## Phase 1
-- [x] Project setup
-- [x] Git repository
-- [x] ROS2 controller bridge
-- [x] Python package
+`ctr_base -> ctr_tip` is dynamically computed from the current forward-mechanics solution.
 
-## Phase 2
-- [x] Material class
-- [x] Tube class
-- [x] CTRState
-- [x] ConcentricTubeRobot
-- [x] Backbone
-- [x] Segment
-- [x] CTRSolution
+Cartesian teleoperation commands are expressed along the X, Y, and Z axes of `ctr_base`, not the moving `ctr_tip` frame.
 
-## Phase 3
-- [ ] Torsion BVP
-- [ ] Backbone integration
-- [ ] Forward mechanics solver
+## Visualization
 
-## Phase 4
-- [ ] MuJoCo visualization
-- [ ] ROS2 teleoperation
+The project supports both Python/Matplotlib visualization and ROS 2/RViz visualization.
 
-## Phase 5
-- [ ] Inverse kinematics
-- [ ] Motion planning
-- [ ] Hardware interface
+The RViz interface displays:
+
+- the current backbone;
+- individual mechanics segments using distinct colors;
+- `world`, `ctr_base`, and `ctr_tip` coordinate frames;
+- the accumulated Cartesian tip trajectory.
+
+Backbone visualization uses a `MarkerArray` because each mechanics segment is represented independently.
+
+The tip trajectory uses a separate `LINE_STRIP` marker and maintains a bounded history.
+
+## Performance Strategy
+
+Interactive CTR mechanics are computationally demanding because a numerical Jacobian requires multiple nonlinear forward solves.
+
+The current implementation improves interactive performance through:
+
+1. warm-started torsion solves;
+2. direct tip extraction from dense IVP solutions;
+3. Jacobian reuse across nearby control configurations;
+4. avoiding mechanics solves when the commanded Cartesian velocity is zero;
+5. independent ROS state-publication timing.
+
+These optimizations preserve the nonlinear forward-mechanics model while reducing unnecessary repeated computation.
+
+## Testing and Validation
+
+The project includes automated tests for:
+
+- materials and tube geometry;
+- robot state and validation;
+- geometric intervals and segmentation;
+- torsion mechanics;
+- segment curvature;
+- forward mechanics;
+- backbone sampling;
+- numerical Jacobians;
+- resolved-rate control;
+- insertion constraints.
+
+The forward mechanics have also been compared against independent MATLAB validation cases.
+
+Timing and Jacobian-reuse examples are retained in `examples/` to document performance behavior and optimization decisions.
+
+## Current Limitations
+
+The current implementation intentionally remains a research/development simulator.
+
+Notable limitations include:
+
+- unloaded mechanics only;
+- no external contact or distributed environmental loading;
+- computationally expensive finite-difference Jacobians;
+- approximate Jacobian reuse between refreshes;
+- shooting/continuation convergence is not guaranteed for arbitrary robot geometries;
+- insertion constraints are applied after the unconstrained resolved-rate calculation;
+- no hardware CTR interface;
+- the Windows Xbox sender remains a separate process from the ROS 2 launch system.
+
+These boundaries are kept explicit so future extensions can be added without coupling them unnecessarily to the core mechanics solver.
